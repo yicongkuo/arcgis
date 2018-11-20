@@ -1,15 +1,16 @@
 require([
-	"esri/views/MapView",
-	"esri/WebMap",
-	"esri/Graphic",
+	'esri/views/MapView',
+	'esri/WebMap',
+	'esri/Graphic',
 	
-	"esri/widgets/Locate",
-	"esri/geometry/Point",
+	'esri/widgets/Locate',
+	'esri/geometry/Point',
+	'esri/tasks/support/Query',
 
-	"dojo/domReady!"
+	'dojo/domReady!'
 ], function (
 	MapView, WebMap, Graphic,
-	Locate, Point
+	Locate, Point, Query
 ){
 	/************************************************************
 	* Creates a new WebMap instance. A WebMap must reference
@@ -18,7 +19,7 @@ require([
 	************************************************************/
 	var webmap = new WebMap({
 		portalItem: {
-			id: "7fbef6c71d3e4858abb6bf2bb9830b54"
+			id: '7fbef6c71d3e4858abb6bf2bb9830b54'
 		}
 	});
 
@@ -27,7 +28,7 @@ require([
 	************************************************************/
 	var view = new MapView({
 		map: webmap,
-		container: "mapDiv"
+		container: 'mapDiv'
 	});
 
 	/************************************************************
@@ -36,22 +37,29 @@ require([
 	var locateWidget = new Locate({
 		view: view,
 		graphic: new Graphic({
-    		symbol: { type: "simple-marker" }
+    		symbol: { type: 'simple-marker' }
   		})
 	});
-	view.ui.add(locateWidget, "top-left");
+	view.ui.add(locateWidget, 'top-left');
 
+	/*************************************************
+     * bind get current position functionailty
+	 **************************************************/
+	var runGPS = null;
 	webmap.when(function (mapObj){
 		// Get Feature Layer from webmap
 		gpsTrackLayer = mapObj.layers.items[0];
 
 		// Get Device GPS Data and add to feature layer
-		locateWidget.on("locate", _addFeature);
-		locateWidget.on("locate-error", _errorHandler);
-		setInterval(function (){ locateWidget.locate() }, 3000);
-	
+		locateWidget.on('locate', _addFeature);
+		locateWidget.on('locate-error', _errorHandler);
+
+		// Bind Button Event
+		document.getElementById('switch').addEventListener('click', _autoRunGPS);
+		document.getElementById('removeTrack').addEventListener('click', _removeTrack);
+
 	}, function (error){
-		alert("無法載入Web Map");
+		alert('無法載入Web Map');
 		return;
 	});
 
@@ -67,5 +75,35 @@ require([
 	function _errorHandler(error){
 		console.log(error);
 		return;
+	}
+
+	function _autoRunGPS(){
+		var swap = this.getAttribute('class');
+		
+		if(swap === 'off'){
+			this.classList.remove('off');
+			this.classList.add('on');
+			runGPS = setInterval(function (){ locateWidget.locate() }, 3000);
+		}
+		
+		if(swap === 'on'){
+			this.classList.remove('on');
+			this.classList.add('off');
+			clearInterval(runGPS);
+		}
+	}
+	
+	function _removeTrack(){
+		var query = new Query();
+			query.where = '1=1';
+			query.outSpatialReference = { wkid: 4326 };
+			query.returnGeometry = true;
+			query.outFields = ['*'];
+
+		gpsTrackLayer.queryFeatures(query).then(function (response){
+			if (gpsTrackLayer.capabilities.editing.supportsDeleteByAnonymous){
+				gpsTrackLayer.applyEdits({deleteFeatures: response.features});		
+			}
+		}, _errorHandler);
 	}
 });
