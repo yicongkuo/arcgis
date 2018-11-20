@@ -3,14 +3,17 @@ require([
 	'esri/WebMap',
 	'esri/Graphic',
 	
+	"esri/widgets/Home",
 	'esri/widgets/Locate',
+
 	'esri/geometry/Point',
 	'esri/tasks/support/Query',
 
 	'dojo/domReady!'
 ], function (
 	MapView, WebMap, Graphic,
-	Locate, Point, Query
+	Home, Locate, 
+	Point, Query
 ){
 	/************************************************************
 	* Creates a new WebMap instance. A WebMap must reference
@@ -30,6 +33,14 @@ require([
 		map: webmap,
 		container: 'mapDiv'
 	});
+
+	/************************************************************
+	 * Add Home Button
+	 ************************************************************/
+	var homeWidget = new Home({
+ 		view: view
+	});
+	view.ui.add(homeWidget, "top-left");
 
 	/************************************************************
 	 * Add Locate Button to detect device GPS signal
