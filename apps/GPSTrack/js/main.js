@@ -47,9 +47,12 @@ require([
 
 		// Get Device GPS Data and add to feature layer
 		locateWidget.on("locate", _addFeature);
+		locateWidget.on("locate-error", _errorHandler);
+		setInterval(function (){ locateWidget.locate() }, 3000);
 	
 	}, function (error){
-		console.log(error);
+		alert("無法載入Web Map");
+		return;
 	});
 
 	function _addFeature(evt){
@@ -59,5 +62,10 @@ require([
 		if (gpsTrackLayer.capabilities.editing.supportsGeometryUpdate){
 			var promise = gpsTrackLayer.applyEdits({ addFeatures: [point] });
 		}
+	}
+
+	function _errorHandler(error){
+		console.log(error);
+		return;
 	}
 });
